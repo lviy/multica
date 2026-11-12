@@ -673,6 +673,10 @@
       "agent_activity": {
         "label": "智能体活动",
         "description": "智能体运行失败时"
+      },
+      "workspace_reviews": {
+        "label": "所有进入审核中的任务",
+        "description": "工作区内任何任务进入审核中时通知我，包括未订阅的任务和我自己的操作。关闭普通状态变更通知也会提醒。"
       }
     },
     "system": {

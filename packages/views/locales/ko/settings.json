@@ -673,6 +673,10 @@
       "agent_activity": {
         "label": "에이전트 활동",
         "description": "에이전트 실행이 실패할 때"
+      },
+      "workspace_reviews": {
+        "label": "검토에 들어가는 모든 이슈",
+        "description": "팔로우하지 않은 이슈와 내 변경을 포함해 이 워크스페이스의 모든 이슈가 검토 중으로 바뀌면 알립니다. 일반 상태 알림을 꺼도 알림을 받습니다."
       }
     },
     "system": {

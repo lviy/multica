@@ -71,7 +71,8 @@ func TestPatchNotificationPreferencesMergesWithoutReplacing(t *testing.T) {
 	testHandler.PatchNotificationPreferences(
 		patchRecorder,
 		notificationPreferenceRequest(t, http.MethodPatch, map[string]string{
-			"comments": "muted",
+			"comments":          "muted",
+			"workspace_reviews": "all",
 		}),
 	)
 	if patchRecorder.Code != http.StatusOK {
@@ -90,6 +91,9 @@ func TestPatchNotificationPreferencesMergesWithoutReplacing(t *testing.T) {
 	}
 	if response.Preferences["status_changes"] != "muted" {
 		t.Fatalf("status_changes was replaced: %#v", response.Preferences)
+	}
+	if response.Preferences["workspace_reviews"] != "all" {
+		t.Fatalf("workspace review opt-in missing: %#v", response.Preferences)
 	}
 	if response.Preferences["comments"] != "muted" {
 		t.Fatalf("comments patch missing: %#v", response.Preferences)

@@ -74,3 +74,16 @@ describe("notification preference patches", () => {
     ).toEqual({});
   });
 });
+
+describe("workspace review opt in", () => {
+  it("persists all rather than treating it as the default", () => {
+    const patch = deriveNotificationPreferencePatch({}, { workspace_reviews: "all" });
+    expect(patch).toEqual({ workspace_reviews: "all" });
+    expect(applyNotificationPreferencePatch({}, patch)).toEqual({ workspace_reviews: "all" });
+    expect(deriveNotificationPreferencePatch({ workspace_reviews: "all" }, {})).toEqual({ workspace_reviews: "muted" });
+    expect(applyNotificationPreferencePatch({ workspace_reviews: "all" }, { workspace_reviews: "muted" })).toEqual({});
+  });
+  it("restores opt-in after a failed disable without losing other preferences", () => {
+    expect(rollbackNotificationPreferencePatch({ comments: "muted" }, { workspace_reviews: "muted" }, { workspace_reviews: "all" })).toEqual({ comments: "muted", workspace_reviews: "all" });
+  });
+});

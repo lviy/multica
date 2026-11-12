@@ -1,6 +1,7 @@
 export type NotificationGroupKey =
   | "assignments"
   | "status_changes"
+  | "workspace_reviews"
   | "comments"
   | "mentions"
   | "updates"

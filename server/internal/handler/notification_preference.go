@@ -20,6 +20,7 @@ import (
 var validNotifGroups = map[string]bool{
 	"assignments":          true,
 	"status_changes":       true,
+	"workspace_reviews":    true,
 	"comments":             true,
 	"mentions":             true,
 	"updates":              true,

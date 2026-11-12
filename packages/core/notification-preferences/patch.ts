@@ -7,6 +7,7 @@ import type {
 const NOTIFICATION_GROUP_KEYS: readonly NotificationGroupKey[] = [
   "assignments",
   "status_changes",
+  "workspace_reviews",
   "comments",
   "mentions",
   "updates",
@@ -14,16 +15,20 @@ const NOTIFICATION_GROUP_KEYS: readonly NotificationGroupKey[] = [
   "system_notifications",
 ];
 
+export function defaultNotificationPreference(key: NotificationGroupKey): NotificationGroupValue {
+  return key === "workspace_reviews" ? "muted" : "all";
+}
+
 function preferenceValue(
   preferences: NotificationPreferences,
   key: NotificationGroupKey,
 ): NotificationGroupValue {
-  return preferences[key] ?? "all";
+  return preferences[key] ?? defaultNotificationPreference(key);
 }
 
 /**
  * Convert the full preference object produced by the settings UI into the
- * smallest atomic patch. Missing keys mean the default value ("all").
+ * smallest atomic patch. Missing keys mean the group default (review watching is opt-in).
  */
 export function deriveNotificationPreferencePatch(
   previous: NotificationPreferences,
@@ -42,7 +47,7 @@ export function deriveNotificationPreferencePatch(
   return patch;
 }
 
-/** Apply a preference patch while keeping default "all" values sparse. */
+/** Apply a preference patch while keeping group defaults sparse. */
 export function applyNotificationPreferencePatch(
   current: NotificationPreferences,
   patch: NotificationPreferences,
@@ -51,10 +56,11 @@ export function applyNotificationPreferencePatch(
 
   for (const key of NOTIFICATION_GROUP_KEYS) {
     const value = patch[key];
-    if (value === "muted") {
-      next[key] = value;
-    } else if (value === "all") {
+    if (value === undefined) continue;
+    if (value === defaultNotificationPreference(key)) {
       delete next[key];
+    } else {
+      next[key] = value;
     }
   }
 
@@ -82,7 +88,7 @@ export function rollbackNotificationPreferencePatch(
     }
 
     const previousValue = preferenceValue(previous, key);
-    if (previousValue === "all") {
+    if (previousValue === defaultNotificationPreference(key)) {
       delete next[key];
     } else {
       next[key] = previousValue;

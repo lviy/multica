@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { notificationPreferenceOptions } from "@multica/core/notification-preferences/queries";
+import { defaultNotificationPreference } from "@multica/core/notification-preferences/patch";
 import { useUpdateNotificationPreferences } from "@multica/core/notification-preferences/mutations";
 import type { NotificationGroupKey, NotificationPreferences } from "@multica/core/types";
 import { Switch } from "@multica/ui/components/ui/switch";
@@ -21,6 +22,7 @@ import {
 const INBOX_GROUP_KEYS = [
   "assignments",
   "status_changes",
+  "workspace_reviews",
   "comments",
   "mentions",
   "updates",
@@ -41,8 +43,8 @@ export function NotificationsTab() {
       ...preferences,
       [key]: enabled ? "all" : "muted",
     };
-    // Remove keys set to "all" (default) to keep the object clean
-    if (enabled) {
+    // Keep default values sparse; workspace review watching defaults to off.
+    if (updated[key] === defaultNotificationPreference(key)) {
       delete updated[key];
     }
     mutation.mutate(updated, {
@@ -66,7 +68,7 @@ export function NotificationsTab() {
       >
         <SettingsCard>
             {INBOX_GROUP_KEYS.map((key: InboxGroupKey) => {
-              const enabled = preferences[key] !== "muted";
+              const enabled = (preferences[key] ?? defaultNotificationPreference(key)) === "all";
               return (
                 <SettingsRow
                   key={key}

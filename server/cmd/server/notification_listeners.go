@@ -409,6 +409,17 @@ func notifyIssueSubscribers(
 		return notified, tierSuppressed
 	}
 
+	// Workspace review watchers opt in independently of issue subscriptions.
+	// Only expand the target issue, never its parent bubble.
+	workspaceReview := subscriberIssueID == targetIssueID && notifType == "status_changed" && issueStatus == issuestatus.InReview
+	var reviewMembers []db.Member
+	if workspaceReview {
+		reviewMembers, err = queries.ListMembers(ctx, parseUUID(workspaceID))
+		if err != nil {
+			slog.Error("failed to list workspace review watchers", "workspace_id", workspaceID, "error", err)
+		}
+	}
+
 	// Batch-load notification preferences for all member subscribers.
 	var memberIDs []string
 	for _, sub := range subs {
@@ -416,7 +427,28 @@ func notifyIssueSubscribers(
 			memberIDs = append(memberIDs, util.UUIDToString(sub.UserID))
 		}
 	}
+	for _, member := range reviewMembers {
+		memberIDs = append(memberIDs, util.UUIDToString(member.UserID))
+	}
 	userPrefs := loadUserPrefs(ctx, queries, workspaceID, memberIDs)
+	reviewWatchers := map[string]bool{}
+	seen := map[string]bool{}
+	for _, sub := range subs {
+		if sub.UserType == "member" {
+			seen[util.UUIDToString(sub.UserID)] = true
+		}
+	}
+	for _, member := range reviewMembers {
+		id := util.UUIDToString(member.UserID)
+		if userPrefs[id]["workspace_reviews"] != "all" {
+			continue
+		}
+		reviewWatchers[id] = true
+		if !seen[id] {
+			subs = append(subs, db.IssueSubscriber{UserType: "member", UserID: member.UserID})
+			seen[id] = true
+		}
+	}
 
 	for _, sub := range subs {
 		// Only notify member-type subscribers (not agents)
@@ -426,8 +458,8 @@ func notifyIssueSubscribers(
 
 		subID := util.UUIDToString(sub.UserID)
 
-		// Skip the actor
-		if subID == e.ActorID {
+		// Review watchers explicitly request every review entry, including their own.
+		if subID == e.ActorID && !reviewWatchers[subID] {
 			continue
 		}
 
@@ -437,13 +469,13 @@ func notifyIssueSubscribers(
 		}
 
 		// Skip if this notification type is muted by the user
-		if prefs, ok := userPrefs[subID]; ok && isNotifMuted(prefs, notifType) {
+		if prefs, ok := userPrefs[subID]; ok && isNotifMuted(prefs, notifType) && !reviewWatchers[subID] {
 			continue
 		}
 
 		// Delegated subscriptions deliver a narrower event set than direct
 		// ones — see deliverToSubscriber.
-		if !deliverToSubscriber(sub.Reason, notifType, statusIsHandoff) {
+		if !reviewWatchers[subID] && !deliverToSubscriber(sub.Reason, notifType, statusIsHandoff) {
 			tierSuppressed[subID] = true
 			continue
 		}
@@ -689,6 +721,12 @@ func registerNotificationListeners(bus *events.Bus, queries *db.Queries) {
 		issue, ok := payload["issue"].(handler.IssueResponse)
 		if !ok {
 			return
+		}
+
+		if issue.Status == issuestatus.InReview {
+			details, _ := json.Marshal(map[string]string{"from": "", "to": issue.Status})
+			notifySubscribers(ctx, queries, bus, issue.ID, issue.Status, e.WorkspaceID, e,
+				nil, "status_changed", "info", issue.Title, "", details)
 		}
 
 		// Track who already got notified to avoid duplicates

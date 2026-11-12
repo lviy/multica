@@ -678,6 +678,10 @@
       "agent_activity": {
         "label": "Activité des agents",
         "description": "Lorsqu'une exécution d'agent échoue"
+      },
+      "workspace_reviews": {
+        "label": "Tous les tickets passant en revue",
+        "description": "Me notifier quand un ticket de cet espace passe en revue, même sans abonnement et pour mes propres modifications. Fonctionne aussi si les notifications de statut sont désactivées."
       }
     },
     "system": {

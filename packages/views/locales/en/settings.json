@@ -678,6 +678,10 @@
       "agent_activity": {
         "label": "Agent activity",
         "description": "When an agent run fails"
+      },
+      "workspace_reviews": {
+        "label": "All issues entering review",
+        "description": "Notify me when any issue in this workspace enters In Review, including issues I do not follow and my own changes. Works even when status change notifications are off."
       }
     },
     "system": {
